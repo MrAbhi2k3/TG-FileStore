@@ -49,14 +49,14 @@ async def save_batch_media_in_channel(bot: Client, editable: Message, message_id
                 InlineKeyboardButton("Delete Batch", callback_data="closeMessage")
             ]])
         )
-        share_link = f"https://t.me/{Config.BOT_USERNAME}?start=PredatorHackerzZ_{str_to_b64(str(SaveMessage.id))}"
+        share_link = f"https://pksavebot.samarfiles.workers.dev/?start=PredatorHackerzZ_{str_to_b64(str(SaveMessage.id))}"
         await editable.edit(
             f"**Batch Files Stored in my Database!**\n\nHere is the Permanent Link of your files: {share_link} \n\n"
             f"Just Click the link to get your files!",
             reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Open Link", url=share_link)],
                  [InlineKeyboardButton("Bots Channel", url="https://t.me/TeleRoidGroup"),
-                  InlineKeyboardButton("Support Group", url="https://t.me/TeleRoid14")]]
+                  InlineKeyboardButton("Support Group", url="https://t.me/OwnYourBotz")]]
             ),
             disable_web_page_preview=True
         )
@@ -87,7 +87,7 @@ async def save_media_in_channel(bot: Client, editable: Message, message: Message
         await forwarded_msg.reply_text(
             f"#PRIVATE_FILE:\n\n[{message.from_user.first_name}](tg://user?id={message.from_user.id}) Got File Link!",
             disable_web_page_preview=True)
-        share_link = f"https://t.me/{Config.BOT_USERNAME}?start=PredatorHackerzZ_{str_to_b64(file_er_id)}"
+        share_link = f"https://pksavebot.samarfiles.workers.dev/?start=PredatorHackerzZ_{str_to_b64(file_er_id)}"
         await editable.edit(
             "**Your File Stored in my Database!**\n\n"
             f"Here is the Permanent Link of your file: {share_link} \n\n"
@@ -95,7 +95,7 @@ async def save_media_in_channel(bot: Client, editable: Message, message: Message
             reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Open Link", url=share_link)],
                  [InlineKeyboardButton("Bots Channel", url="https://t.me/TeleRoidGroup"),
-                  InlineKeyboardButton("Support Group", url="https://t.me/TeleRoid14")]]
+                  InlineKeyboardButton("Support Group", url="https://t.me/OwnYourBotz")]]
             ),
             disable_web_page_preview=True
         )
