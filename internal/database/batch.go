@@ -15,8 +15,27 @@ func (m *MongoDB) StartBatchSession(ctx context.Context, userID int64) error {
 	opts := options.Update().SetUpsert(true)
 	_, err := coll.UpdateOne(ctx,
 		bson.M{"user_id": userID},
-		bson.M{"$set": bson.M{"created_at": now}},
+		bson.M{"$set": bson.M{"created_at": now, "status_msg_id": 0, "status_chat_id": 0}},
 		opts,
+	)
+	return err
+}
+
+func (m *MongoDB) GetBatchSession(ctx context.Context, userID int64) (*models.BatchSession, error) {
+	coll := m.Database.Collection("batch_sessions")
+	var session models.BatchSession
+	err := coll.FindOne(ctx, bson.M{"user_id": userID}).Decode(&session)
+	if err != nil {
+		return nil, err
+	}
+	return &session, nil
+}
+
+func (m *MongoDB) SetBatchStatusMsg(ctx context.Context, userID int64, chatID int64, messageID int) error {
+	coll := m.Database.Collection("batch_sessions")
+	_, err := coll.UpdateOne(ctx,
+		bson.M{"user_id": userID},
+		bson.M{"$set": bson.M{"status_chat_id": chatID, "status_msg_id": messageID}},
 	)
 	return err
 }

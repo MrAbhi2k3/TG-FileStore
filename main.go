@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -47,6 +49,38 @@ func main() {
 	bHandler := handlers.NewBotHandler(cfg, tg, db)
 	service := bot.NewService(cfg, tg, db, bHandler)
 
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/f/", func(w http.ResponseWriter, r *http.Request) {
+			token := strings.TrimPrefix(r.URL.Path, "/f/")
+			token = strings.TrimSpace(token)
+			if token != "" {
+				redirectURL := fmt.Sprintf("https://t.me/%s?start=%s", botUser.Username, token)
+				http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+				return
+			}
+			http.NotFound(w, r)
+		})
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"status":"ok","message":"Telegram File Store Bot is running"}`))
+		})
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "3000"
+		}
+		log.Printf("Local HTTP server listening on port %s", port)
+		server := &http.Server{
+			Addr:    ":" + port,
+			Handler: mux,
+		}
+		go func() {
+			<-ctx.Done()
+			_ = server.Close()
+		}()
+		_ = server.ListenAndServe()
+	}()
+
 	_ = tg.DeleteWebhook(ctx, false)
 
 	log.Printf("Bot online: @%s", botUser.Username)
@@ -81,7 +115,9 @@ func main() {
 			go func(upd bot.Update) {
 				processCtx, procCancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer procCancel()
-				_ = service.ProcessUpdate(processCtx, &upd)
+				if err := service.ProcessUpdate(processCtx, &upd); err != nil {
+					log.Printf("[ERROR] ProcessUpdate failed: %v", err)
+				}
 			}(u)
 		}
 	}

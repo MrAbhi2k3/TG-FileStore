@@ -91,20 +91,14 @@ func (h *BotHandler) HandleCallbackQuery(ctx context.Context, cq *bot.CallbackQu
 			InlineKeyboard: [][]bot.InlineKeyboardButton{
 				{
 					{Text: "📥 Open Link", URL: link},
-				},
-				{
 					{Text: "🔗 Share Link", URL: fmt.Sprintf("https://t.me/share/url?url=%s", link)},
 				},
 			},
 		}
 
 		if cq.Message != nil {
-			err = h.tg.EditMessageText(ctx, chatID, cq.Message.MessageID, successMsg, kb)
-			if err == nil {
-				return nil
-			}
+			_ = h.tg.DeleteMessage(ctx, chatID, cq.Message.MessageID)
 		}
-
 		_, err = h.tg.SendMessage(ctx, chatID, successMsg, kb)
 		return err
 	}
@@ -112,11 +106,19 @@ func (h *BotHandler) HandleCallbackQuery(ctx context.Context, cq *bot.CallbackQu
 	if data == "batch_cancel" {
 		_ = h.db.ClearBatch(ctx, userID)
 		_ = h.tg.AnswerCallbackQuery(ctx, cq.ID, "Batch session cancelled.", false)
+		cancelMsg := "🗑️ <b>Batch session cancelled!</b> Queue cleared."
+		edited := false
 		if cq.Message != nil {
-			_ = h.tg.DeleteMessage(ctx, chatID, cq.Message.MessageID)
+			err := h.tg.EditMessageText(ctx, chatID, cq.Message.MessageID, cancelMsg, nil)
+			if err == nil {
+				edited = true
+			}
 		}
-		_, err := h.tg.SendMessage(ctx, chatID, "🗑️ <b>Batch session cancelled!</b> Queue cleared.", nil)
-		return err
+		if !edited {
+			_, err := h.tg.SendMessage(ctx, chatID, cancelMsg, nil)
+			return err
+		}
+		return nil
 	}
 
 	if data == "nav_help" {

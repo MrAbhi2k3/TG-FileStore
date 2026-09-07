@@ -26,7 +26,19 @@ func NewBotHandler(cfg *bot.Config, tg *bot.TelegramClient, db *database.MongoDB
 }
 
 func (h *BotHandler) GetFileLink(ctx context.Context, token string) string {
-	if h.cfg.WebhookURL != "" {
+	if h.cfg.WebhookURL != "" && !strings.Contains(h.cfg.WebhookURL, "localhost") && !strings.Contains(h.cfg.WebhookURL, "127.0.0.1") {
+		base := strings.TrimSuffix(h.cfg.WebhookURL, "/")
+		return fmt.Sprintf("%s/f/%s", base, token)
+	}
+	botUser, _ := h.tg.GetMe(ctx)
+	if botUser != nil && botUser.Username != "" {
+		return fmt.Sprintf("https://t.me/%s?start=%s", botUser.Username, token)
+	}
+	return "https://t.me/share/url?url=" + token
+}
+
+func (h *BotHandler) GetButtonLink(ctx context.Context, token string) string {
+	if h.cfg.WebhookURL != "" && strings.HasPrefix(h.cfg.WebhookURL, "https://") && !strings.Contains(h.cfg.WebhookURL, "localhost") && !strings.Contains(h.cfg.WebhookURL, "127.0.0.1") {
 		base := strings.TrimSuffix(h.cfg.WebhookURL, "/")
 		return fmt.Sprintf("%s/f/%s", base, token)
 	}

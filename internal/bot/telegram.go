@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -28,7 +29,6 @@ type TelegramClient struct {
 	botMu      sync.RWMutex
 }
 
-// NewTelegramClient constructs a lightweight Telegram API client
 func NewTelegramClient(token string) *TelegramClient {
 	return &TelegramClient{
 		token:    token,
@@ -40,7 +40,6 @@ func NewTelegramClient(token string) *TelegramClient {
 	}
 }
 
-// GetMe retrieves the bot's user profile
 func (c *TelegramClient) GetMe(ctx context.Context) (*User, error) {
 	c.botMu.RLock()
 	if c.botUser != nil {
@@ -64,13 +63,14 @@ func (c *TelegramClient) GetMe(ctx context.Context) (*User, error) {
 	return &resp.Result, nil
 }
 
-// SendMessage sends a text message
 func (c *TelegramClient) SendMessage(ctx context.Context, chatID int64, text string, replyMarkup *InlineKeyboardMarkup) (*Message, error) {
 	payload := map[string]any{
-		"chat_id":                  chatID,
-		"text":                     text,
-		"parse_mode":               "HTML",
-		"disable_web_page_preview": true,
+		"chat_id":    chatID,
+		"text":       text,
+		"parse_mode": "HTML",
+		"link_preview_options": map[string]any{
+			"is_disabled": true,
+		},
 	}
 	if replyMarkup != nil {
 		payload["reply_markup"] = replyMarkup
@@ -86,7 +86,6 @@ func (c *TelegramClient) SendMessage(ctx context.Context, chatID int64, text str
 	return &resp.Result, nil
 }
 
-// CopyMessage copies a message from fromChatID to chatID
 func (c *TelegramClient) CopyMessage(ctx context.Context, chatID int64, fromChatID int64, messageID int) (int, error) {
 	payload := map[string]any{
 		"chat_id":      chatID,
@@ -104,7 +103,6 @@ func (c *TelegramClient) CopyMessage(ctx context.Context, chatID int64, fromChat
 	return resp.Result.MessageID, nil
 }
 
-// ForwardMessage forwards a message
 func (c *TelegramClient) ForwardMessage(ctx context.Context, chatID int64, fromChatID int64, messageID int) (*Message, error) {
 	payload := map[string]any{
 		"chat_id":      chatID,
@@ -122,7 +120,6 @@ func (c *TelegramClient) ForwardMessage(ctx context.Context, chatID int64, fromC
 	return &resp.Result, nil
 }
 
-// DeleteMessage deletes a message
 func (c *TelegramClient) DeleteMessage(ctx context.Context, chatID int64, messageID int) error {
 	payload := map[string]any{
 		"chat_id":    chatID,
@@ -140,11 +137,13 @@ func (c *TelegramClient) DeleteMessage(ctx context.Context, chatID int64, messag
 
 func (c *TelegramClient) EditMessageText(ctx context.Context, chatID int64, messageID int, text string, replyMarkup *InlineKeyboardMarkup) error {
 	payload := map[string]any{
-		"chat_id":                  chatID,
-		"message_id":               messageID,
-		"text":                     text,
-		"parse_mode":               "HTML",
-		"disable_web_page_preview": true,
+		"chat_id":    chatID,
+		"message_id": messageID,
+		"text":       text,
+		"parse_mode": "HTML",
+		"link_preview_options": map[string]any{
+			"is_disabled": true,
+		},
 	}
 	if replyMarkup != nil {
 		payload["reply_markup"] = replyMarkup
@@ -179,7 +178,6 @@ func (c *TelegramClient) AnswerCallbackQuery(ctx context.Context, callbackQueryI
 	return nil
 }
 
-// GetChatMember checks the membership status of a user in a channel
 func (c *TelegramClient) GetChatMember(ctx context.Context, chatID int64, userID int64) (*ChatMember, error) {
 	payload := map[string]any{
 		"chat_id": chatID,
@@ -195,7 +193,6 @@ func (c *TelegramClient) GetChatMember(ctx context.Context, chatID int64, userID
 	return &resp.Result, nil
 }
 
-// GetFile requests file metadata from Telegram
 func (c *TelegramClient) GetFile(ctx context.Context, fileID string) (*TelegramFile, error) {
 	payload := map[string]any{
 		"file_id": fileID,
@@ -210,8 +207,6 @@ func (c *TelegramClient) GetFile(ctx context.Context, fileID string) (*TelegramF
 	return &resp.Result, nil
 }
 
-// ComputeFileSHA256 streams the file directly from Telegram servers (if <= 20MB)
-// and computes the cryptographic SHA-256 hash without writing to local disk.
 func (c *TelegramClient) ComputeFileSHA256(ctx context.Context, filePath string) (string, error) {
 	if filePath == "" {
 		return "", errors.New("empty file path")
@@ -241,7 +236,6 @@ func (c *TelegramClient) ComputeFileSHA256(ctx context.Context, filePath string)
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-// SetWebhook configures the webhook URL and optional secret token
 func (c *TelegramClient) SetWebhook(ctx context.Context, url string, secretToken string) error {
 	payload := map[string]any{
 		"url":             url,
@@ -261,7 +255,6 @@ func (c *TelegramClient) SetWebhook(ctx context.Context, url string, secretToken
 	return nil
 }
 
-// DeleteWebhook removes the webhook so getUpdates polling can work locally
 func (c *TelegramClient) DeleteWebhook(ctx context.Context, dropPendingUpdates bool) error {
 	payload := map[string]any{
 		"drop_pending_updates": dropPendingUpdates,
@@ -276,7 +269,6 @@ func (c *TelegramClient) DeleteWebhook(ctx context.Context, dropPendingUpdates b
 	return nil
 }
 
-// GetUpdates polls Telegram for updates with long polling
 func (c *TelegramClient) GetUpdates(ctx context.Context, offset int64, limit int, timeoutSec int) ([]Update, error) {
 	payload := map[string]any{
 		"offset":          offset,
@@ -317,5 +309,14 @@ func (c *TelegramClient) postJSON(ctx context.Context, endpoint string, body any
 	}
 	defer resp.Body.Close()
 
-	return json.NewDecoder(resp.Body).Decode(out)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[TELEGRAM API ERROR] %s returned status %d: %s", endpoint, resp.StatusCode, string(respBody))
+	}
+
+	return json.Unmarshal(respBody, out)
 }

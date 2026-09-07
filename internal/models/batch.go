@@ -11,6 +11,8 @@ type BatchQueueItem struct {
 }
 
 type BatchSession struct {
-	UserID    int64     `bson:"user_id"`
-	CreatedAt time.Time `bson:"created_at"`
+	UserID        int64     `bson:"user_id"`
+	StatusMsgID   int       `bson:"status_msg_id"`
+	StatusChatID  int64     `bson:"status_chat_id"`
+	CreatedAt     time.Time `bson:"created_at"`
 }

@@ -156,46 +156,35 @@ func (h *BotHandler) HandleFile(ctx context.Context, msg *bot.Message) error {
 		fileHash = utils.ComputeIdentityHash(media.FileUniqueID, media.FileSize, media.FileName)
 	}
 
-	existing, err := h.db.FindFileByHash(ctx, fileHash)
-	if err != nil {
-		_, _ = h.tg.SendMessage(ctx, chatID, "❌ Database error during duplicate check. Please try again.", nil)
-		return err
+	storageMsgID, copyErr := h.tg.CopyMessage(ctx, h.cfg.LogChannelID, chatID, msg.MessageID)
+	if copyErr != nil {
+		errMsg := fmt.Sprintf("❌ <b>Upload Failed</b>\n\nCould not copy file to storage channel. Ensure bot is an administrator in the storage channel (ID: <code>%d</code>).", h.cfg.LogChannelID)
+		_, _ = h.tg.SendMessage(ctx, chatID, errMsg, nil)
+		return copyErr
 	}
 
-	var record *models.FileRecord
-	if existing != nil {
-		record = existing
-	} else {
-		storageMsgID, copyErr := h.tg.CopyMessage(ctx, h.cfg.LogChannelID, chatID, msg.MessageID)
-		if copyErr != nil {
-			errMsg := fmt.Sprintf("❌ <b>Upload Failed</b>\n\nCould not copy file to storage channel. Ensure bot is an administrator in the storage channel (ID: <code>%d</code>).", h.cfg.LogChannelID)
-			_, _ = h.tg.SendMessage(ctx, chatID, errMsg, nil)
-			return copyErr
-		}
+	token, err := utils.GenerateToken(8)
+	if err != nil {
+		token = fmt.Sprintf("tok%d", msg.MessageID)
+	}
 
-		token, err := utils.GenerateToken(8)
-		if err != nil {
-			token = fmt.Sprintf("tok%d", msg.MessageID)
-		}
+	record := &models.FileRecord{
+		Hash:         fileHash,
+		Token:        token,
+		MessageID:    storageMsgID,
+		ChannelID:    h.cfg.LogChannelID,
+		FileName:     media.FileName,
+		FileSize:     media.FileSize,
+		MimeType:     media.MimeType,
+		FileType:     media.FileType,
+		FileID:       media.FileID,
+		UniqueFileID: media.FileUniqueID,
+		UploadedBy:   userID,
+	}
 
-		record = &models.FileRecord{
-			Hash:         fileHash,
-			Token:        token,
-			MessageID:    storageMsgID,
-			ChannelID:    h.cfg.LogChannelID,
-			FileName:     media.FileName,
-			FileSize:     media.FileSize,
-			MimeType:     media.MimeType,
-			FileType:     media.FileType,
-			FileID:       media.FileID,
-			UniqueFileID: media.FileUniqueID,
-			UploadedBy:   userID,
-		}
-
-		if err := h.db.SaveFile(ctx, record); err != nil {
-			_, _ = h.tg.SendMessage(ctx, chatID, "❌ Failed to save file metadata to database.", nil)
-			return err
-		}
+	if err := h.db.SaveFile(ctx, record); err != nil {
+		_, _ = h.tg.SendMessage(ctx, chatID, "❌ Failed to save file metadata to database.", nil)
+		return err
 	}
 
 	link := h.GetFileLink(ctx, record.Token)
@@ -230,7 +219,15 @@ func (h *BotHandler) HandleFile(ctx context.Context, msg *bot.Message) error {
 			},
 		}
 
-		_, err = h.tg.SendMessage(ctx, chatID, statusText, kb)
+		session, _ := h.db.GetBatchSession(ctx, userID)
+		if session != nil && session.StatusMsgID > 0 {
+			_ = h.tg.DeleteMessage(ctx, session.StatusChatID, session.StatusMsgID)
+		}
+
+		sentMsg, err := h.tg.SendMessage(ctx, chatID, statusText, kb)
+		if err == nil && sentMsg != nil {
+			_ = h.db.SetBatchStatusMsg(ctx, userID, chatID, sentMsg.MessageID)
+		}
 		return err
 	}
 
