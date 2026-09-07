@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MrAbhi2k3/TG-FileStore/internal/bot"
-	"github.com/MrAbhi2k3/TG-FileStore/internal/database"
-	"github.com/MrAbhi2k3/TG-FileStore/internal/handlers"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/bot"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/database"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/handlers"
 )
 
 var (

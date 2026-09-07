@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/MrAbhi2k3/TG-FileStore/internal/database"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/database"
 )
 
 type BotHandlerInterface interface {

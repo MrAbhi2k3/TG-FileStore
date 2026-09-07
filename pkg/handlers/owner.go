@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/MrAbhi2k3/TG-FileStore/internal/bot"
-	"github.com/MrAbhi2k3/TG-FileStore/internal/utils"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/bot"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/utils"
 )
 
 func (h *BotHandler) handleStats(ctx context.Context, msg *bot.Message) error {

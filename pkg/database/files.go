@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/MrAbhi2k3/TG-FileStore/internal/models"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

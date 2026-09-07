@@ -53,7 +53,7 @@ A high-performance Telegram File Store Bot written in Go using only the official
 ├── vercel.json           # Vercel serverless routing
 ├── api/
 │   └── webhook.go        # Vercel HTTP serverless handler + /f/:token redirect
-└── internal/
+└── pkg/
     ├── bot/              # Telegram API client, bot types & config
     ├── database/         # MongoDB connection & queries
     ├── handlers/         # Message, file, command & callback handlers

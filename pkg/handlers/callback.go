@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MrAbhi2k3/TG-FileStore/internal/bot"
-	"github.com/MrAbhi2k3/TG-FileStore/internal/models"
-	"github.com/MrAbhi2k3/TG-FileStore/internal/utils"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/bot"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/models"
+	"github.com/MrAbhi2k3/TG-FileStore/pkg/utils"
 )
 
 func (h *BotHandler) HandleCallbackQuery(ctx context.Context, cq *bot.CallbackQuery) error {
